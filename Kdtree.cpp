@@ -102,27 +102,38 @@ class Kdtree
     static void nearest(Node_kdtree* kd_tree, int n , point_2d& point, int &best_, float &best_dist_) 
     {
         float d, dx;
+	list<int> list_n;
 
-        if (n == -1) return;
+        if ( n == -1 ) return;
         
-	d = kd_tree[n].dist_squared(point);
-        
-	if (best_ == -1 || d < best_dist_) 
+	list_n.push_back( n );
+	int tem_n;
+
+	while( !list_n.empty() )
 	{
-            best_dist_ = d;
-            best_ = n;
-        }
-
-        if (best_dist_ == 0) return;
+	    tem_n = list_n.back();
+	    list_n.pop_back();
+	    if( tem_n != -1 )
+	    {
+		d = kd_tree[ tem_n ].dist_squared( point );
         
-	if(kd_tree[n].name_median == 'x') dx = kd_tree[n].coords.x - point.x;
-        else dx = kd_tree[n].coords.y - point.y;
+		if ( best_ == -1 || d < best_dist_ ) 
+		{
+		    best_dist_ = d;
+		    best_ = tem_n;
+		}
 
-        nearest(kd_tree, dx > 0 ? kd_tree[n].left : kd_tree[n].right, point, best_, best_dist_);
+		if ( best_dist_ == 0 ) break;
         
-	if (dx * dx >= best_dist_) return;
+		kd_tree[ tem_n ].name_median == 'x' ? dx = kd_tree[ tem_n ].coords.x - point.x : 
+		    dx = kd_tree[ tem_n ].coords.y - point.y;
 
-        nearest(kd_tree, dx > 0 ? kd_tree[n].right : kd_tree[n].left, point, best_, best_dist_);
+		dx > 0 ? list_n.push_back( kd_tree[ tem_n ].left ) : list_n.push_back( kd_tree[ tem_n ].right );
+        
+		if ( dx * dx < best_dist_ )
+		    dx > 0 ? list_n.push_back( kd_tree[ tem_n ].right ) : list_n.push_back( kd_tree[ tem_n ].left );
+	    }
+	}
     }
     static void fuerza_bruta(Node_kdtree* kd_tree, point_2d &point, int Num_max, int &best_, float &best_dist_)
     {
@@ -147,29 +158,34 @@ class Kdtree
     }
     static void Range_search(Node_kdtree* kd_tree, int n, Region &region, int Num_max, list<int> &List_Point)
     {
-        if(n == -1)
-        {
-            return;
-        }
-        
-        switch(region.region(kd_tree[n])){
-            case 1://left
-                Range_search(kd_tree, kd_tree[n].left, region, Num_max, List_Point);//left
-                break;
-            case 2://center
-                Range_search(kd_tree, kd_tree[n].left, region, Num_max, List_Point);//left
-                Range_search(kd_tree, kd_tree[n].right, region, Num_max, List_Point);//right
-                if(region.in_region(kd_tree[n].coords))
-                {
-                    List_Point.push_back(n);
-                }
-                break;
-            case 3://right
-                Range_search(kd_tree, kd_tree[n].right, region, Num_max, List_Point);//right
-                break;
-            default:
-                std::cout<<"Error Range_search"<<std::endl;
-                break;
+	list<int> list_n;
+	list_n.push_back( n );
+	int tem_n;
+	while( !list_n.empty() )
+	{
+	    tem_n = list_n.back();
+	    list_n.pop_back();
+	    if( tem_n != -1 )
+	    {
+		switch( region.region( kd_tree[ tem_n ] ) )
+		{
+		    case 1://left
+			if( kd_tree[ tem_n ].left != -1 ) list_n.push_back( kd_tree[ tem_n ].left ) ;//left
+			break;
+		    case 2://center
+			if( kd_tree[ tem_n ].left != -1 ) list_n.push_back( kd_tree[ tem_n ].left );//left
+			if( kd_tree[ tem_n ].right != -1 ) list_n.push_back( kd_tree[ tem_n ].right );//right
+			if( region.in_region( kd_tree[ tem_n ].coords ) )
+			    List_Point.push_back( tem_n );
+			break;
+		    case 3://right
+			if( kd_tree[ tem_n ].right != -1 ) list_n.push_back( kd_tree[ tem_n ].right );//right
+			break;
+		    default:
+			std::cout<<"Error Range_search"<<std::endl;
+			break;
+		}
+	    }
         }
     }
     static void Range_search_fuerza_bruta(Node_kdtree* kd_tree, Region &region, int Num_max, list<int> &List_Point_f)
